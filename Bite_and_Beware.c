@@ -32,7 +32,7 @@ int gameover, key, score;
 int x, y, fruitx, fruity;
 
 // Banyaknya trap dan koordinat trap
-int trapCount, trapx[3], trapy[3];
+int trapCount, trapx[10], trapy[10];
 
 // Fungsi-fungsi
 void setup();
@@ -45,6 +45,7 @@ void ScoreSort();
 void ScoreDisplay();
 void FileUpdate(int score, char *name);
 int condition(int x, int y);
+int conditionTrap(int num);
 
 int main()
 {
@@ -121,6 +122,7 @@ void setup()
     snakeTailLen = 0;
     key = '\0';
     trapCount = 0;
+    score = 0;
 
     // Koordinat awal ular
     x = WIDTH / 2;
@@ -135,38 +137,12 @@ void setup()
     while (fruity == 0)
         fruity = rand() % HEIGHT;
 
-    // Koordinat awal ekor ular
-    for (int i = 0; i < snakeTailLen; i++)
-    {
-        snakeTailX[i] = -1;
-        snakeTailY[i] = -1;
-    }
-
-    // Koorinat awal trap
-    for (int i = 0; i < 3; i++)
+    // Koordinat awal trap
+    for (int i = 0; i < 10; i++)
     {
         trapx[i] = -1;
         trapy[i] = -1;
     }
-
-    // Koordinat awal trap
-    // trapx = rand() % WIDTH;
-    // trapy = rand() % HEIGHT;
-    // while (trapx == 0)
-    //     trapx = rand() % WIDTH;
-    // while (trapy == 0)
-    //     trapy = rand() % HEIGHT;
-    // while (trapx == fruitx && trapy == fruity)
-    // {
-    //     trapx = rand() % WIDTH;
-    //     trapy = rand() % HEIGHT;
-    //     while (trapx == 0)
-    //         trapx = rand() % WIDTH;
-    //     while (trapy == 0)
-    //         trapy = rand() % HEIGHT;
-    // }
-
-    score = 0;
 }
 
 void draw()
@@ -199,14 +175,14 @@ void draw()
                 printf("*");
 
             // Munculin trap
-            else if (i == trapy[0] && j == trapx[0])
-                printf("X");
+            // else if (i == trapy[0] && j == trapx[0])
+            //     printf("X");
 
-            else if (i == trapy[1] && j == trapx[1])
-                printf("X");
+            // else if (i == trapy[1] && j == trapx[1])
+            //     printf("X");
 
-            else if (i == trapy[2] && j == trapx[2])
-                printf("X");
+            // else if (i == trapy[2] && j == trapx[2])
+            //     printf("X");
 
             // Badan ular
             else
@@ -219,17 +195,17 @@ void draw()
                         printf("o");
                         prTail = 1;
                     }
-
                 }
 
-                // for (int k = 0; k < trapCount; k++)
-                // {
-                //     if (trapy[k] == i && trapx[k] == j)
-                //     {
-                //         printf("X");
-                //         prTail = 1;
-                //     }
-                // }
+                for (int k = 0; k < trapCount; k++)
+                {
+                    if (trapy[k] == i && trapx[k] == j)
+                    {
+                        printf("X");
+                        prTail = 1;
+                        continue;
+                    }
+                }
 
                 if (!prTail)
                     printf(" ");
@@ -350,41 +326,46 @@ void logic()
         snakeTailLen++;
 
         // check untuk nambahin trap
-        if (score - 40 % 120 == 0)
+        if ((score - 40) % 120 == 0)
         {
-            trapx[trapCount] = rand() % WIDTH;
-            trapy[trapCount] = rand() % HEIGHT;
-            while (trapx[trapCount] == 0)
-                trapx[trapCount] = rand() % WIDTH;
-            while (trapy[trapCount] == 0)
-                trapy[trapCount] = rand() % HEIGHT;
-            while (trapx[trapCount] == fruitx && trapy[trapCount] == fruity)
-            {
+            int attempt = 0;
+            do{
                 trapx[trapCount] = rand() % WIDTH;
                 trapy[trapCount] = rand() % HEIGHT;
                 while (trapx[trapCount] == 0)
                     trapx[trapCount] = rand() % WIDTH;
                 while (trapy[trapCount] == 0)
                     trapy[trapCount] = rand() % HEIGHT;
-            }
-            trapCount++;
-            if (trapCount == 3)
-                trapCount = 0;
+                attempt++;
+            } while ((trapx[trapCount] == fruitx && trapy[trapCount] == fruity)  || conditionTrap(trapCount) && attempt < 100);
+            if (trapCount < 10 && attempt < 100)
+                trapCount++;
         }
     }
 }
 
 int condition(int x, int y)
 {
-    if (x == trapx[0] && y == trapy[0])
-        return 1;
+    for(int i = 0; i < trapCount; i++)
+    {
+        if (x == trapx[i] && y == trapy[i])
+            return 1;
+    }
+   
+    return 0;
+}
+
+int conditionTrap(int num)
+{
+    for (int i = 0; i < num; i++)
+    {  
+        if (i == num)
+            continue;
+
+        if (trapx[num] == trapx[i] && trapy[num] == trapy[i])
+            return 1;
+    }
     
-    else if (x == trapx[1] && y == trapy[1])
-        return 1;
-
-    else if (x == trapx[2] && y == trapy[2])
-        return 1;
-
     return 0;
 }
 
@@ -417,6 +398,7 @@ void PlayGame()
 
 void ScoreDisplay()
 {
+    ScoreSort();
     FILE *f = fopen("score.txt", "r");
 
     if (f == NULL)
@@ -449,7 +431,7 @@ void ScoreSort()
         exit(1);
     }
 
-    struct Score *scores;
+    struct Score *scores = NULL;
     int size = 0;
 
     struct Score temp;
@@ -496,6 +478,9 @@ void ScoreSort()
     {
         fprintf(f, "%s,%s,%d\n", scores[i].name, scores[i].date, scores[i].score);
     }
+
+    fclose(f);
+    free(scores);
 }
 
 void FileUpdate(int score, char *name)
